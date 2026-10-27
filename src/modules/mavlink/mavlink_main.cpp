@@ -1731,13 +1731,6 @@ struct StreamRateDefault {
 
 constexpr float unlimited_rate = -1.0f;
 
-// USB and onboard links follow fresh atmospheric samples in the HyRUS dialect.
-#if defined(HYRUS_MAVLINK) && defined(MAVLINK_MSG_ID_SENS_ATMOS)
-constexpr StreamRateDefault hygrometer_stream_default{"SENS_ATMOS", unlimited_rate};
-#else
-constexpr StreamRateDefault hygrometer_stream_default{"HYGROMETER_SENSOR", 1.0f};
-#endif
-
 constexpr StreamRateDefault streams_mode_normal[] = {
 	{"ADSB_VEHICLE", 5.f},
 	{"ALTITUDE", 1.0f},
@@ -1861,7 +1854,7 @@ constexpr StreamRateDefault streams_mode_onboard[] = {
 	{"MANUAL_INPUT_STATUS", 1.0f},
 #endif // MAVLINK_MSG_ID_MANUAL_INPUT_STATUS
 	{"HOME_POSITION", 0.5f},
-	hygrometer_stream_default,
+	{"HYGROMETER_SENSOR", 1.0f},
 	{"NAV_CONTROLLER_OUTPUT", 10.0f},
 	{"OPEN_DRONE_ID_LOCATION", 1.f},
 	{"OPEN_DRONE_ID_SYSTEM", 1.f},
@@ -2027,7 +2020,7 @@ constexpr StreamRateDefault streams_mode_config[] = {
 	{"GIMBAL_MANAGER_STATUS", 0.5f},
 	{"HIGHRES_IMU", 50.0f},
 	{"HOME_POSITION", 0.5f},
-	hygrometer_stream_default,
+	{"HYGROMETER_SENSOR", 1.0f},
 	{"MAG_CAL_REPORT", 1.0f},
 	{"MANUAL_CONTROL", 5.0f},
 #if defined(MAVLINK_MSG_ID_MANUAL_INPUT_STATUS)
@@ -2333,6 +2326,14 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		ret = -1;
 		break;
 	}
+
+#if defined(HYRUS_MAVLINK) && defined(MAVLINK_MSG_ID_SENS_ATMOS)
+	// Add survey samples after the original defaults; preserve every stock stream.
+	if (_mode == MAVLINK_MODE_ONBOARD || _mode == MAVLINK_MODE_CONFIG) {
+		configure_stream_local("SENS_ATMOS", unlimited_rate);
+	}
+
+#endif
 
 	if (configure_single_stream && !stream_configured && strcmp(configure_single_stream, "HEARTBEAT") != 0) {
 		// stream was not found, assume it is disabled by default
