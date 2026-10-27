@@ -92,6 +92,9 @@
 #include "streams/HIL_STATE_QUATERNION.hpp"
 #include "streams/HOME_POSITION.hpp"
 #include "streams/HYGROMETER_SENSOR.hpp"
+#if defined(HYRUS_MAVLINK) && defined(MAVLINK_MSG_ID_SENS_ATMOS)
+#include "streams/SENS_ATMOS.hpp"
+#endif
 #include "streams/LANDING_TARGET.hpp"
 #include "streams/LOCAL_POSITION_NED.hpp"
 // constrained builds without mag processing have no mag calibration to report
@@ -383,6 +386,9 @@ static constexpr StreamListItem streams_list[] = {
 #if defined(HYGROMETER_SENSOR_HPP)
 	create_stream_list_item<MavlinkStreamHygrometerSensor>(),
 #endif // HYGROMETER_SENSOR_HPP
+#if defined(SENS_ATMOS_HPP)
+	create_stream_list_item<MavlinkStreamSensAtmos>(),
+#endif // SENS_ATMOS_HPP
 #if defined(SERVO_OUTPUT_RAW_HPP)
 	create_stream_list_item<MavlinkStreamServoOutputRaw<0> >(),
 	create_stream_list_item<MavlinkStreamServoOutputRaw<1> >(),
