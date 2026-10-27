@@ -2327,6 +2327,14 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		break;
 	}
 
+#if defined(HYRUS_MAVLINK) && defined(MAVLINK_MSG_ID_SENS_ATMOS)
+	// Add survey samples after the original defaults; preserve every stock stream.
+	if (_mode == MAVLINK_MODE_ONBOARD || _mode == MAVLINK_MODE_CONFIG) {
+		configure_stream_local("SENS_ATMOS", unlimited_rate);
+	}
+
+#endif
+
 	if (configure_single_stream && !stream_configured && strcmp(configure_single_stream, "HEARTBEAT") != 0) {
 		// stream was not found, assume it is disabled by default
 		return configure_stream(configure_single_stream, 0.0f);

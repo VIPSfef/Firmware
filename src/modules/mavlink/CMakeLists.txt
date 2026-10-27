@@ -56,28 +56,34 @@ add_custom_command(
 add_custom_target(mavlink_c_generate_uavionix DEPENDS ${MAVLINK_LIBRARY_DIR}/${MAVLINK_DIALECT_UAVIONIX}/${MAVLINK_DIALECT_UAVIONIX}.h)
 set_source_files_properties(${MAVLINK_LIBRARY_DIR}/${MAVLINK_DIALECT_UAVIONIX}/${MAVLINK_DIALECT_UAVIONIX}.h PROPERTIES GENERATED true)
 
-# generate the primary dialect
+# The survey extension wraps the selected dialect without changing board policy.
+option(HYRUS_MAVLINK "Add HyRUS atmospheric MAVLink messages and stream" OFF)
+set(MAVLINK_PRIMARY_DIALECT "${CONFIG_MAVLINK_DIALECT}")
+set(MAVLINK_PRIMARY_XML "${MAVLINK_GIT_DIR}/message_definitions/v1.0/${CONFIG_MAVLINK_DIALECT}.xml")
+if(HYRUS_MAVLINK)
+	include("${CMAKE_CURRENT_SOURCE_DIR}/hyrus/dialect.cmake")
+endif()
 add_custom_command(
-	OUTPUT ${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}/${CONFIG_MAVLINK_DIALECT}.h
+	OUTPUT ${MAVLINK_LIBRARY_DIR}/${MAVLINK_PRIMARY_DIALECT}/${MAVLINK_PRIMARY_DIALECT}.h
 	COMMAND
 		${PYTHON_EXECUTABLE} ${MAVLINK_GIT_DIR}/pymavlink/tools/mavgen.py
 			--lang C --wire-protocol 2.0
 			--output ${MAVLINK_LIBRARY_DIR}
-			${MAVLINK_GIT_DIR}/message_definitions/v1.0/${CONFIG_MAVLINK_DIALECT}.xml > ${CMAKE_CURRENT_BINARY_DIR}/mavgen_${CONFIG_MAVLINK_DIALECT}.log
+			${MAVLINK_PRIMARY_XML} > ${CMAKE_CURRENT_BINARY_DIR}/mavgen_${MAVLINK_PRIMARY_DIALECT}.log
 	DEPENDS
 		git_mavlink_v2
 		${MAVLINK_GIT_DIR}/pymavlink/tools/mavgen.py
-		${MAVLINK_GIT_DIR}/message_definitions/v1.0/${CONFIG_MAVLINK_DIALECT}.xml
+		${MAVLINK_PRIMARY_XML}
 		${BOARD_DEFCONFIG}
 
 		# generate after uAvionix
 		mavlink_c_generate_uavionix
 		${MAVLINK_LIBRARY_DIR}/${MAVLINK_DIALECT_UAVIONIX}/${MAVLINK_DIALECT_UAVIONIX}.h
 
-	COMMENT "Generating Mavlink ${CONFIG_MAVLINK_DIALECT}: ${MAVLINK_GIT_DIR_RELATIVE}/message_definitions/v1.0/${CONFIG_MAVLINK_DIALECT}.xml"
+	COMMENT "Generating Mavlink ${MAVLINK_PRIMARY_DIALECT}: ${MAVLINK_PRIMARY_XML}"
 )
-add_custom_target(mavlink_c_generate DEPENDS ${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}/${CONFIG_MAVLINK_DIALECT}.h)
-set_source_files_properties(${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}/${CONFIG_MAVLINK_DIALECT}.h PROPERTIES GENERATED true)
+add_custom_target(mavlink_c_generate DEPENDS ${MAVLINK_LIBRARY_DIR}/${MAVLINK_PRIMARY_DIALECT}/${MAVLINK_PRIMARY_DIALECT}.h)
+set_source_files_properties(${MAVLINK_LIBRARY_DIR}/${MAVLINK_PRIMARY_DIALECT}/${MAVLINK_PRIMARY_DIALECT}.h PROPERTIES GENERATED true)
 
 
 
@@ -86,14 +92,14 @@ add_library(mavlink_c INTERFACE)
 target_compile_options(mavlink_c INTERFACE -Wno-address-of-packed-member -Wno-cast-align)
 target_sources(mavlink_c
 	INTERFACE
-		${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}/${CONFIG_MAVLINK_DIALECT}.h
+		${MAVLINK_LIBRARY_DIR}/${MAVLINK_PRIMARY_DIALECT}/${MAVLINK_PRIMARY_DIALECT}.h
 		${MAVLINK_LIBRARY_DIR}/${MAVLINK_DIALECT_UAVIONIX}/${MAVLINK_DIALECT_UAVIONIX}.h
 )
 target_include_directories(mavlink_c
 	INTERFACE
 		${MAVLINK_LIBRARY_DIR}
 		${MAVLINK_LIBRARY_DIR}/../
-		${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}
+		${MAVLINK_LIBRARY_DIR}/${MAVLINK_PRIMARY_DIALECT}
 		${MAVLINK_LIBRARY_DIR}/${MAVLINK_DIALECT_UAVIONIX}
 )
 
@@ -160,7 +166,7 @@ target_link_libraries(modules__mavlink PRIVATE failure_injection)
 px4_add_unit_gtest(SRC MavlinkStatustextHandlerTest.cpp
 	INCLUDES
 		${MAVLINK_LIBRARY_DIR}
-		${MAVLINK_LIBRARY_DIR}/${CONFIG_MAVLINK_DIALECT}
+		${MAVLINK_LIBRARY_DIR}/${MAVLINK_PRIMARY_DIALECT}
 		${MAVLINK_LIBRARY_DIR}/${MAVLINK_DIALECT_UAVIONIX}
 	COMPILE_FLAGS
 		-Wno-address-of-packed-member # TODO: fix in c_library_v2
