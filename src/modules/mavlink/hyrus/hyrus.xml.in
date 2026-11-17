@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- Keep the board-selected dialect and add unchanged official definitions. -->
+  <include>@CONFIG_MAVLINK_DIALECT@.xml</include>
+  @HYRUS_ADDITIONAL_INCLUDE@
+  <messages/>
+</mavlink>
